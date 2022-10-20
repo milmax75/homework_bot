@@ -68,6 +68,7 @@ def get_api_answer(current_timestamp):
             logging.error(f'API not available {error}')
         )
 
+
 def check_response(response):
     """Checking if response bears valid information."""
     # response = get_api_answer()
@@ -106,9 +107,9 @@ def parse_status(homework):
             raise HomeworkStatusError(
                 logging.error('Unknown status')
             )
-    except:
+    except Exception as error:
         HomeworkDataError(
-            logging.error('Data received cant be parsed')
+            logging.error(f'Data received cant be parsed {error}')
         )
     else:
         verdict = HOMEWORK_STATUSES.get(homework_status)
@@ -120,9 +121,9 @@ def parse_status(homework):
 def check_tokens():
     """Checking tokens validity."""
     tokens = {
-        'PRACTICUM_TOKEN':PRACTICUM_TOKEN,
-        'TELEGRAM_TOKEN':TELEGRAM_TOKEN,
-        'TELEGRAM_CHAT_ID':TELEGRAM_CHAT_ID
+        'PRACTICUM_TOKEN': PRACTICUM_TOKEN,
+        'TELEGRAM_TOKEN': TELEGRAM_TOKEN,
+        'TELEGRAM_CHAT_ID': TELEGRAM_CHAT_ID
     }
     for token in tokens.values():
         if token is None:
@@ -132,7 +133,6 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
-
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
 
@@ -153,6 +153,7 @@ def main():
             time.sleep(RETRY_TIME)
         else:
             send_message(bot, message)
+
 
 if __name__ == '__main__':
     main()
