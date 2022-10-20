@@ -42,7 +42,7 @@ logging.getLogger('').addHandler(handler)
 
 
 def send_message(bot, message):
-    """Sends message from parse_status function to telegram bot chat. """
+    """Sends message from parse_status function to telegram bot chat."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         success_message = 'удачная отправка сообщения в Telegram'
@@ -53,31 +53,23 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """Receives response from Yandex API. """
+    """Receives response from Yandex API."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
         if response.status_code != HTTPStatus.OK:
-            raise APINotRespondedException('Responce not received'.format(
-               ENDPOINT,
-               HEADERS,
-               params,
-               response.status_code,
-               response.reason,
-               response.text
-        ))
+            raise APINotRespondedException(
+                logging.error('Responce not received')
+            )
         return response.json()
     except Exception as error:
-        raise APIUnavailableException('API not available'.format(
-            ENDPOINT,
-            HEADERS,
-            params,
-            error
-        ))
+        raise APIUnavailableException(
+            logging.error(f'API not available {error}')
+        )
 
 def check_response(response):
-    '''Checking if response bears valid information'''
+    """Checking if response bears valid information."""
     # response = get_api_answer()
     if not isinstance(response, dict):
         raise TypeError(
@@ -95,8 +87,9 @@ def check_response(response):
     homework = homeworks[0]
     return homework
 
+
 def parse_status(homework):
-    '''Gets status of the homework from the information received'''
+    """Gets status of the homework from the information received."""
     if 'homework_name' not in homework:
         raise KeyError(
             logging.error('No homework info')
@@ -123,8 +116,9 @@ def parse_status(homework):
         logging.info(success_message)
         return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
+
 def check_tokens():
-    '''Checking tokens validity'''
+    """Checking tokens validity."""
     tokens = {
         'PRACTICUM_TOKEN':PRACTICUM_TOKEN,
         'TELEGRAM_TOKEN':TELEGRAM_TOKEN,
@@ -135,10 +129,10 @@ def check_tokens():
             return False
     return True
 
+
 def main():
     """Основная логика работы бота."""
-    timestamp = current_timestamp or int(time.time())
-    params = {'from_date': timestamp}
+
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
 
@@ -157,15 +151,6 @@ def main():
             fail_message = f'Сбой в работе программы: {error}'
             logging.error(fail_message)
             time.sleep(RETRY_TIME)
-        except:
-            APINotRespondedException('Responce not received'.format(
-            ENDPOINT,
-            HEADERS,
-            params,
-            response.status_code,
-            response.reason,
-            response.text
-        ))
         else:
             send_message(bot, message)
 
