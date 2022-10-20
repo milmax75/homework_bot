@@ -1,4 +1,4 @@
-from exceptions import(
+from exceptions import (
     APIUnavailableException,
     APINotRespondedException,
     HomeworkDataError,
@@ -8,7 +8,12 @@ from http import HTTPStatus
 from logging import StreamHandler
 from dotenv import load_dotenv
 
-import logging, os, requests, sys, telegram, time
+import logging
+import os
+import requests
+import sys
+import telegram
+import time
 
 load_dotenv()
 
@@ -35,8 +40,9 @@ logging.basicConfig(
 handler = StreamHandler(stream=sys.stdout)
 logging.getLogger('').addHandler(handler)
 
+
 def send_message(bot, message):
-    '''Sends message from parse_status function to telegram bot chat'''
+    """Sends message from parse_status function to telegram bot chat. """
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         success_message = 'удачная отправка сообщения в Telegram'
@@ -45,8 +51,9 @@ def send_message(bot, message):
         fail_message = f'Cбой при отправке сообщения в Telegram {error}'
         logging.error(fail_message)
 
+
 def get_api_answer(current_timestamp):
-    '''Receives response from Yandex API'''
+    """Receives response from Yandex API. """
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
@@ -130,7 +137,8 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
-
+    timestamp = current_timestamp or int(time.time())
+    params = {'from_date': timestamp}
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
 
@@ -149,6 +157,15 @@ def main():
             fail_message = f'Сбой в работе программы: {error}'
             logging.error(fail_message)
             time.sleep(RETRY_TIME)
+        except:
+            APINotRespondedException('Responce not received'.format(
+            ENDPOINT,
+            HEADERS,
+            params,
+            response.status_code,
+            response.reason,
+            response.text
+        ))
         else:
             send_message(bot, message)
 
