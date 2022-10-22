@@ -67,7 +67,7 @@ def get_api_answer(current_timestamp):
             logging.error('Not json format received')
     except Exception as error:
         print(error)
-        raise APIUnavailableException(f'API not available')
+        raise APIUnavailableException('API not available')
 
 
 def check_response(response):
@@ -112,6 +112,7 @@ def parse_status(homework):
 
 
 def check_tokens():
+    """Checks tokens validity."""
     if not (PRACTICUM_TOKEN is None
             or TELEGRAM_TOKEN is None
             or TELEGRAM_CHAT_ID is None):
