@@ -21,7 +21,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-RETRY_TIME = 6
+RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -58,59 +58,52 @@ def get_api_answer(current_timestamp):
     params = {'from_date': timestamp}
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
+        logging.info('Request to API sent')
         if response.status_code != HTTPStatus.OK:
-            raise APINotRespondedException(
-                logging.error('Responce not received')
-            )
-        return response.json()
+            raise APINotRespondedException('Responce not received')
+        try:
+            return response.json()
+        except TypeError:
+            logging.error('Not json format received')
     except Exception as error:
-        raise APIUnavailableException(
-            logging.error(f'API not available {error}')
-        )
+        print(error)
+        raise APIUnavailableException(f'API not available')
 
 
 def check_response(response):
     """Checking if response bears valid information."""
-    # response = get_api_answer()
     if not isinstance(response, dict):
-        raise TypeError(
-            logging.error('Info received is not a dictionary')
-        )
-    if isinstance(response, list):
-        raise TypeError(
-            logging.error('Info received is list')
-        )
+        logging.error('Info received is not a dictionary')
+        raise TypeError('Info received is not a dictionary')
+
     if 'homeworks' not in response:
-        raise KeyError(
-            logging.error('No new status received')
-        )
+        logging.error('No new status received')
+        raise KeyError('No new status received')
     homeworks = response.get('homeworks')
     homework = homeworks[0]
-    return homework
+    try:
+        return homework
+    except IndexError:
+        logging.error('Empty list received')
 
 
 def parse_status(homework):
     """Gets status of the homework from the information received."""
     if 'homework_name' not in homework:
-        raise KeyError(
-            logging.error('No homework info')
-        )
+        logging.error('No homework info')
+        raise KeyError('No homework info')
     if not isinstance(homework, dict):
-        raise TypeError(
-            logging.error('Info received is not a dictionary')
-        )
-
+        logging.error('Info received is not a dictionary')
+        raise TypeError('Info received is not a dictionary')
     try:
         homework_name = homework.get('homework_name')
         homework_status = homework.get('status')
         if homework_status is None or homework_status not in HOMEWORK_STATUSES:
-            raise HomeworkStatusError(
-                logging.error('Unknown status')
-            )
+            logging.error('Unknown status')
+            raise HomeworkStatusError('Unknown status')
     except Exception as error:
-        HomeworkDataError(
-            logging.error(f'Data received cant be parsed {error}')
-        )
+        HomeworkDataError(f'Data received cant be parsed {error}')
+        logging.error(f'Data received cant be parsed {error}')
     else:
         verdict = HOMEWORK_STATUSES.get(homework_status)
         success_message = 'удачная отправка сообщения в Telegram'
@@ -119,16 +112,10 @@ def parse_status(homework):
 
 
 def check_tokens():
-    """Checking tokens validity."""
-    tokens = {
-        'PRACTICUM_TOKEN': PRACTICUM_TOKEN,
-        'TELEGRAM_TOKEN': TELEGRAM_TOKEN,
-        'TELEGRAM_CHAT_ID': TELEGRAM_CHAT_ID
-    }
-    for token in tokens.values():
-        if token is None:
-            return False
-    return True
+    if not (PRACTICUM_TOKEN is None
+            or TELEGRAM_TOKEN is None
+            or TELEGRAM_CHAT_ID is None):
+        return True
 
 
 def main():
@@ -152,6 +139,7 @@ def main():
             time.sleep(RETRY_TIME)
         else:
             send_message(bot, message)
+            logging.info('Message sent successfully')
 
 
 if __name__ == '__main__':
