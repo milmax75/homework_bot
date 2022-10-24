@@ -78,7 +78,7 @@ def check_response(response):
     try:
         response
     except JSONDecodeError:
-            logging.error('Not json format received')
+        logging.error('Not json format received')
 
     if not isinstance(response, dict):
         logging.error('Info received is not a dictionary')
@@ -121,9 +121,9 @@ def parse_status(homework):
 
 def check_tokens():
     """Checks tokens validity."""
-    x=all([PRACTICUM_TOKEN is not None, 
-        TELEGRAM_TOKEN is not None,
-        TELEGRAM_CHAT_ID is not None])
+    x = all([PRACTICUM_TOKEN is not None,
+             TELEGRAM_TOKEN is not None,
+             TELEGRAM_CHAT_ID is not None])
     return x
 
 
