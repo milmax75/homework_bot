@@ -7,6 +7,7 @@ from exceptions import (
 from http import HTTPStatus
 from logging import StreamHandler
 from dotenv import load_dotenv
+from json.decoder import JSONDecodeError
 
 import logging
 import os
@@ -20,6 +21,10 @@ load_dotenv()
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+
+TOKENS = {'PRACTICUM_TOKEN': PRACTICUM_TOKEN,
+          'TELEGRAM_TOKEN': TELEGRAM_TOKEN,
+          'TELEGRAM_CHAT_ID': TELEGRAM_CHAT_ID}
 
 RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
@@ -61,17 +66,20 @@ def get_api_answer(current_timestamp):
         logging.info('Request to API sent')
         if response.status_code != HTTPStatus.OK:
             raise APINotRespondedException('Responce not received')
-        try:
+        else:
             return response.json()
-        except TypeError:
-            logging.error('Not json format received')
     except Exception as error:
-        print(error)
+        logging.error(f'API not available. {error}')
         raise APIUnavailableException('API not available')
 
 
 def check_response(response):
     """Checking if response bears valid information."""
+    try:
+        response
+    except JSONDecodeError:
+            logging.error('Not json format received')
+
     if not isinstance(response, dict):
         logging.error('Info received is not a dictionary')
         raise TypeError('Info received is not a dictionary')
@@ -113,10 +121,10 @@ def parse_status(homework):
 
 def check_tokens():
     """Checks tokens validity."""
-    if not (PRACTICUM_TOKEN is None
-            or TELEGRAM_TOKEN is None
-            or TELEGRAM_CHAT_ID is None):
-        return True
+    x=all([PRACTICUM_TOKEN is not None, 
+        TELEGRAM_TOKEN is not None,
+        TELEGRAM_CHAT_ID is not None])
+    return x
 
 
 def main():
