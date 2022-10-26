@@ -17,9 +17,11 @@ class HomeworkStatusError(Exception):
     '''Unknown homework status'''
     pass
 
+
 class HomeworkDataError(Exception):
     '''Data received cant be parsed'''
     pass
+
 
 class TokensValidationError(Exception):
     '''Tokens cant be validated'''

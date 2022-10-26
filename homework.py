@@ -2,7 +2,8 @@ from exceptions import (
     APIUnavailableException,
     APINotRespondedException,
     HomeworkDataError,
-    HomeworkStatusError
+    HomeworkStatusError,
+    TokensValidationError
 )
 from http import HTTPStatus
 from logging import StreamHandler
@@ -62,8 +63,8 @@ def get_api_answer(current_timestamp):
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
-        response = requests.get(ENDPOINT, headers=HEADERS, params=params)
         logging.info('Request to API sent')
+        response = requests.get(ENDPOINT, headers=HEADERS, params=params)
         if response.status_code != HTTPStatus.OK:
             raise APINotRespondedException('Responce not received')
         else:
@@ -121,10 +122,7 @@ def parse_status(homework):
 
 def check_tokens():
     """Checks tokens validity."""
-    x = all([PRACTICUM_TOKEN is not None,
-             TELEGRAM_TOKEN is not None,
-             TELEGRAM_CHAT_ID is not None])
-    return x
+    return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
 
 
 def main():
@@ -132,23 +130,29 @@ def main():
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
 
-    check_tokens()
+    tokens = check_tokens()
+    if tokens is True:
+        logging.info('Tokens check passed successfully')
+    else:
+        logging.error('Tokens cant be validated')
+        raise TokensValidationError('Tokens cant be validated')
+
+    response1 = get_api_answer(current_timestamp)
     while True:
         try:
-            response1 = get_api_answer(current_timestamp)
-            homework1 = check_response(response1)
-            time.sleep(RETRY_TIME)
             response2 = get_api_answer(current_timestamp)
-            homework2 = check_response(response2)
-            if homework2 != homework1:
-                message = parse_status(homework2)
+            if response2 != response1:
+                homework = check_response(response2)
+                message = parse_status(homework)
         except Exception as error:
             fail_message = f'Сбой в работе программы: {error}'
             logging.error(fail_message)
-            time.sleep(RETRY_TIME)
+            break
         else:
             send_message(bot, message)
             logging.info('Message sent successfully')
+        finally:
+            time.sleep(RETRY_TIME)
 
 
 if __name__ == '__main__':
