@@ -1,6 +1,6 @@
 from exceptions import (
-    APIUnavailableException,
     APINotRespondedException,
+    APIUnavailableException,
     HomeworkDataError,
     HomeworkStatusError,
     TokensValidationError
@@ -51,11 +51,9 @@ def send_message(bot, message):
     """Sends message from parse_status function to telegram bot chat."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        success_message = 'удачная отправка сообщения в Telegram'
-        logging.info(success_message)
+        logging.info('удачная отправка сообщения в Telegram')
     except Exception as error:
-        fail_message = f'Cбой при отправке сообщения в Telegram {error}'
-        logging.error(fail_message)
+        logging.error(f'Cбой при отправке сообщения в Telegram {error}')
 
 
 def get_api_answer(current_timestamp):
@@ -69,6 +67,8 @@ def get_api_answer(current_timestamp):
             raise APINotRespondedException('Responce not received')
         else:
             return response.json()
+    except JSONDecodeError:
+        logging.error('Not json format received')
     except Exception as error:
         logging.error(f'API not available. {error}')
         raise APIUnavailableException('API not available')
@@ -76,11 +76,6 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Checking if response bears valid information."""
-    try:
-        response
-    except JSONDecodeError:
-        logging.error('Not json format received')
-
     if not isinstance(response, dict):
         logging.error('Info received is not a dictionary')
         raise TypeError('Info received is not a dictionary')
@@ -89,8 +84,8 @@ def check_response(response):
         logging.error('No new status received')
         raise KeyError('No new status received')
     homeworks = response.get('homeworks')
-    homework = homeworks[0]
     try:
+        homework = homeworks[0]
         return homework
     except IndexError:
         logging.error('Empty list received')
@@ -115,8 +110,7 @@ def parse_status(homework):
         logging.error(f'Data received cant be parsed {error}')
     else:
         verdict = HOMEWORK_STATUSES.get(homework_status)
-        success_message = 'удачная отправка сообщения в Telegram'
-        logging.info(success_message)
+        logging.info('удачная отправка сообщения в Telegram')
         return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
@@ -127,16 +121,13 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int(time.time())
-
-    tokens = check_tokens()
-    if tokens is True:
-        logging.info('Tokens check passed successfully')
-    else:
+    if not check_tokens():
         logging.error('Tokens cant be validated')
         raise TokensValidationError('Tokens cant be validated')
+    logging.info('Tokens check passed successfully')
 
+    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    current_timestamp = int(time.time())
     response1 = get_api_answer(current_timestamp)
     while True:
         try:
@@ -144,9 +135,9 @@ def main():
             if response2 != response1:
                 homework = check_response(response2)
                 message = parse_status(homework)
+                response1 = response2
         except Exception as error:
-            fail_message = f'Сбой в работе программы: {error}'
-            logging.error(fail_message)
+            logging.error(f'Сбой в работе программы: {error}')
             break
         else:
             send_message(bot, message)
